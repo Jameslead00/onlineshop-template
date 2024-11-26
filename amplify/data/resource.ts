@@ -1,15 +1,58 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 
-/*== STEP 1 ===============================================================
-The section below creates a Todo database table with a "content" field. Try
-adding a new "isDone" field as a boolean. The authorization rule below
-specifies that any user authenticated via an API key can "create", "read",
-"update", and "delete" any "Todo" records.
-=========================================================================*/
 const schema = a.schema({
-  Todo: a
+  Product: a
     .model({
-      content: a.string(),
+      name: a.string().required(),
+      description: a.string().required(),
+      price: a.float().required(),
+      order: a.belongsTo("OrderItem", "productId"),
+    })
+    .authorization((allow) => [allow.publicApiKey()]),
+
+  Order: a
+  .model({
+      customerId: a.id().required(),
+      shippingAddress: a.string().required(),
+      quantity: a.integer().required(),
+      status: a.string().required(),
+      totalAmount: a.float().required(),
+      orderDate: a.date().required(),
+      orderItems: a.hasMany("OrderItem", "orderId"),
+      customer: a.belongsTo("Customer", "customerId"),
+    })
+    .authorization((allow) => [allow.publicApiKey()]),
+
+  OrderItem: a
+  .model({
+      orderId: a.string().required(),
+      productId: a.string().required(),
+      quantity: a.integer().required(),
+      priceAtPurchase: a.float().required(),
+      order: a.belongsTo("Order", "orderId"),
+      product: a.hasOne("Product", "productId"),
+  })
+  .authorization((allow) => [allow.publicApiKey()]),
+
+  Customer: a
+  .model({
+      cognitoId: a.id().required(),
+      firstName: a.string().required(),
+      lastName: a.string().required(),
+      order: a.hasMany("Order", "userId"),
+      address: a.hasMany("Address", "userId"),
+  })
+  .authorization((allow) => [allow.publicApiKey()]),
+
+  Address: a
+  .model({
+      customerId: a.id().required(),
+      street: a.string().required(),
+      city: a.string().required(),
+      state: a.string().required(),
+      postalCode: a.string().required(),
+      country: a.string().required(),
+      user: a.belongsTo("Customer", "customerId"),
     })
     .authorization((allow) => [allow.publicApiKey()]),
 });
@@ -26,32 +69,3 @@ export const data = defineData({
     },
   },
 });
-
-/*== STEP 2 ===============================================================
-Go to your frontend source code. From your client-side code, generate a
-Data client to make CRUDL requests to your table. (THIS SNIPPET WILL ONLY
-WORK IN THE FRONTEND CODE FILE.)
-
-Using JavaScript or Next.js React Server Components, Middleware, Server 
-Actions or Pages Router? Review how to generate Data clients for those use
-cases: https://docs.amplify.aws/gen2/build-a-backend/data/connect-to-API/
-=========================================================================*/
-
-/*
-"use client"
-import { generateClient } from "aws-amplify/data";
-import type { Schema } from "@/amplify/data/resource";
-
-const client = generateClient<Schema>() // use this Data client for CRUDL requests
-*/
-
-/*== STEP 3 ===============================================================
-Fetch records from the database and use them in your frontend component.
-(THIS SNIPPET WILL ONLY WORK IN THE FRONTEND CODE FILE.)
-=========================================================================*/
-
-/* For example, in a React component, you can use this snippet in your
-  function's RETURN statement */
-// const { data: todos } = await client.models.Todo.list()
-
-// return <ul>{todos.map(todo => <li key={todo.id}>{todo.content}</li>)}</ul>
